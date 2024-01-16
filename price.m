@@ -1,10 +1,9 @@
 clc
 clear
 close all
-%% Generate the data of the double-wll potential
 
 randn('state',100)
-NUM=xlsread('data_two');
+NUM=xlsread('data_five');
 x=NUM(1:end,1);
 dt=1;
 %% 分区间
@@ -27,20 +26,16 @@ for j=1:bins
     end
     tx(2,j)=(sumx(j))/num(j);
 end
-%%
- indxthre=find(num>1);
- tx=tx(:,indxthre);
 
 %% Select the basis functions to build the library
-
 u=(tx(1,:))';
 Phi=[ones(size(u,1),1),u,u.^2,u.^3,u.^4,u.^5,u.^(0.5),u.^(-0.5),1./u,log(u),log(u)./u,exp(1./u)];
 Phi_name={'1','t','t.^2','t.^3','t.^4','t.^5','t.^(0.5)','t.^(-0.5)','1./t','log(t)','log(t)./t','exp(1./t)'};
 
 %% For the identification of the drift term
      dr.thre=0.001;
-     Drif =TMSBL ( Phi, (tx(2,:))', 'prune_gamma',1e-4, 'lambda',1e-2, 'learn_lambda',0, 'matrix_reg', zeros(1));
-     Drif(abs(Drif)<dr.thre)=0;
+     Drif =TMSBL ( Phi, (tx(2,:))', 'prune_gamma',1e-4, 'lambda',1e-1, 'learn_lambda',1, 'matrix_reg', zeros(1));
+     %Drif(abs(Drif)<dr.thre)=0;
 
 threshold=10^-10;
 fprintf('Drift: f(x)=');
@@ -58,8 +53,7 @@ for i = 1:size(Drif,1)
 end
 fprintf('\n')
 
-
-   %% 
+   %% 第一种方法求出的G值（在求出f的基础上）
   for j=1:bins
     tx2(1,j)=xmin+j*binlen-1/2*binlen;
     num(j)=0;
@@ -72,15 +66,13 @@ fprintf('\n')
             ;
         end
     end
-    tx2(2,j)=(sumx(j))/num(j); 
+    tx2(2,j)=(sumx(j))/num(j); %%欧拉方法中的G
   end
- 
- indxthre=find(num>1);
- tx2=tx2(:,indxthre);
+
 %% For the identification of the diffusion term
-     di.thre=0.05;
-     Diff =TMSBL (Phi,sqrt(tx2(2,:))', 'prune_gamma',1e-4, 'lambda',1e-1, 'learn_lambda', 0, 'matrix_reg', zeros(1));
-     Diff(abs(Diff)<di.thre)=0;
+     di.thre=0.001;
+     Diff =TMSBL (Phi,sqrt(tx2(2,:))', 'prune_gamma',1e-4, 'lambda',1e-1 , 'learn_lambda', 0, 'matrix_reg', zeros(1));
+     %Diff(abs(Diff)<di.thre)=0;
 
 fprintf('Diffusion: G(x)=',1,1);
 for i = 1:size(Diff,1)
