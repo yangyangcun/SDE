@@ -4,12 +4,12 @@ close all
 %% Generate the data of the double-wll potential
 
 randn('state',100)
-NUM=xlsread('data_month');
+NUM=xlsread('data_two');
 x=NUM(1:end,1);
 dt=1;
+%% 分区间
 
-%% 
-xmax=max(x);xmin=min(x);bins=20;
+xmax=max(x);xmin=min(x);bins=40;
 binlen=(xmax-xmin)/bins;
 
 %% f的估计值
@@ -30,6 +30,7 @@ end
 %%
  indxthre=find(num>1);
  tx=tx(:,indxthre);
+
 %% Select the basis functions to build the library
 
 u=(tx(1,:))';
@@ -38,7 +39,7 @@ Phi_name={'1','t','t.^2','t.^3','t.^4','t.^5','t.^(0.5)','t.^(-0.5)','1./t','log
 
 %% For the identification of the drift term
      dr.thre=0.001;
-     Drif =TMSBL ( Phi, (tx(2,:))', 'prune_gamma',1e-4, 'lambda',1e-3, 'learn_lambda', 0, 'matrix_reg', zeros(1));
+     Drif =TMSBL ( Phi, (tx(2,:))', 'prune_gamma',1e-4, 'lambda',1e-2, 'learn_lambda',0, 'matrix_reg', zeros(1));
      Drif(abs(Drif)<dr.thre)=0;
 
 threshold=10^-10;
@@ -57,7 +58,8 @@ for i = 1:size(Drif,1)
 end
 fprintf('\n')
 
-   %% 第一种方法求出的G值（在求出f的基础上）
+
+   %% 
   for j=1:bins
     tx2(1,j)=xmin+j*binlen-1/2*binlen;
     num(j)=0;
@@ -70,14 +72,14 @@ fprintf('\n')
             ;
         end
     end
-    tx2(2,j)=(sumx(j))/num(j); %%欧拉方法中的G
+    tx2(2,j)=(sumx(j))/num(j); 
   end
- %%
+ 
  indxthre=find(num>1);
  tx2=tx2(:,indxthre);
 %% For the identification of the diffusion term
-     di.thre=0.001;
-     Diff =TMSBL (Phi,sqrt(tx2(2,:))', 'prune_gamma',1e-4, 'lambda',1e-3, 'learn_lambda', 0, 'matrix_reg', zeros(1));
+     di.thre=0.05;
+     Diff =TMSBL (Phi,sqrt(tx2(2,:))', 'prune_gamma',1e-4, 'lambda',1e-1, 'learn_lambda', 0, 'matrix_reg', zeros(1));
      Diff(abs(Diff)<di.thre)=0;
 
 fprintf('Diffusion: G(x)=',1,1);
@@ -86,15 +88,14 @@ for i = 1:size(Diff,1)
             ;
     else
        if Diff(i)<0
-           fprintf('%.4f*%s', Diff(i),Phi_name{i});
+           fprintf('%.6f*%s', Diff(i),Phi_name{i});
        else
            fprintf('+');
-           fprintf('%.4f*%s', Diff(i),Phi_name{i});
+           fprintf('%.6f*%s', Diff(i),Phi_name{i});
         end
     end
 end
 fprintf('\n')
-
 
   %%  The employed library
     
